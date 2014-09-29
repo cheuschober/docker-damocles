@@ -1,0 +1,39 @@
+#! /bin/bash
+#
+# /etc/init.d/docker-damocles
+#
+### BEGIN INIT INFO
+# Provides: docker-damocles
+# Required-Start:
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:  3 5
+# Default-Stop:   0 1 2 6
+# Short-Description: Runs a daemon to watch docker for over-long services
+# Description:    Runs a daemon to watch docker for over-long services
+### END INIT INFO
+
+DAEMON_PATH=/usr/local/bin/docker_damocles.py
+
+case "$1" in
+  start)
+    echo "Starting docker-damocles"
+    python "${DAEMON_PATH}" start
+    ;;
+  stop)
+    echo "Stopping docker-damocles"
+    python "${DAEMON_PATH}" stop
+    ;;
+  restart)
+    echo "Restarting docker-damocles"
+    python "${DAEMON_PATH}" restart
+    ;;
+  *)
+    # Refuse to do other stuff
+    echo "Usage: /etc/init.d/docker-damocles {start|stop|restart}"
+    exit 1
+    ;;
+esac
+
+exit 0
