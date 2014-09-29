@@ -8,10 +8,20 @@ builds that Jenkins could not time-out on its own.
 
 Installation
 ------------
+#.  install deps
 
 #.  Place ``docker-damocles`` in ``/etc/init.d/`` and chmod to 755
 
 #.  Place ``docker_damocles.py`` in ``/usr/local/bin``
+
+.. code:: console
+
+    $ git clone https://github.com/cheuschober/docker-damocles.git
+    $ sudo apt-get install python-pip
+    $ sudo pip install docker-py logging python-daemon
+    $ sudo cp docker-damocles/docker-damocles /etc/init.d/
+    $ sudo dp docker-damocles/docker_damocles.py /usr/local/bin/
+    $ sudo service docker-damocles start
 
 Usage
 -----
