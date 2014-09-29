@@ -8,8 +8,8 @@ import logging
 import time
 
 # Third-Party Libs
-import daemon
 import docker
+from daemon import runner
 
 
 class Damocles:
@@ -22,17 +22,28 @@ class Damocles:
     Attributes:
         sleep_interval: Integer controlling the length of time between wakeups.
         logger: An instance of logging.Logger()
+        log_handler: Handler for the logfile
         docker_client: An instance of docker.Client()
         docker_timeout: The number of seconds that may pass until this daemon
             kills the docker container.
     """
 
+    default_daemon_log = '/dev/tty'
+    default_pidfile = '/var/run/docker_damocles.pid'
+    default_log = '/var/log/docker-damocles.log'
+
     def __init__(self, logger=None, docker_client=None, **kwargs):
+        self.stdin_path = kwargs.get('stdin_path', '/dev/null')
+        self.stdout_path = kwargs.get('stdout_path', self.default_daemon_log)
+        self.stderr_path = kwargs.get('stderr_path', self.default_daemon_log)
+        self.pidfile_path = kwargs.get('pidfile_path', self.default_pidfile)
+        self.pidfile_timeout = kwargs.get('pidfile_timeout', 5)
+   
         self.sleep_interval = kwargs.get('sleep_interval', 5)
         
         if not logger:
             log_name = kwargs.get('log_name', 'DockerDamoclesLog')
-            log_path = kwargs.get('log_path', '/var/log/docker-damocles.log')
+            log_path = kwargs.get('log_path', self.default_log)
             log_level = kwargs.get('log_level', logging.INFO)
             log_format = kwargs.get('log_format',
                                     '%(asctime)s:%(levelname)s:%(message)s')
@@ -41,10 +52,9 @@ class Damocles:
             logger = logging.getLogger(log_name)
             logger.setLevel(log_level)
             formatter = logging.Formatter(log_format, log_datefmt)
-            fhandler = logging.FileHandler(log_path)
-            fhandler.setFormatter(formatter)
-            logger.addHandler(fhandler)
-
+            self.log_handler = logging.FileHandler(log_path)
+            self.log_handler.setFormatter(formatter)
+            logger.addHandler(self.log_handler)
         self.logger = logger
 
         if not docker_client:
@@ -55,7 +65,7 @@ class Damocles:
                 self.logger.exception('Failed to connect to docker.')
 
         self.docker_client = docker_client
-        self.docker_timeout = 30
+        self.docker_timeout = 600
  
 
     def swing(self, containers):
@@ -114,7 +124,8 @@ class Damocles:
             self.logger.exception('Docker Err: unable to list containers.')
         return herd
 
-    def hang(self):
+
+    def run(self):
         """Hangs the Sword of Damocles over Docker's throne.
         
         Args:
@@ -143,9 +154,8 @@ class Damocles:
 
             
 if __name__ == '__main__':
-    context = daemon.DaemonContext()
-    context.pidfile = '/var/run/docker-damocles.pid'
-   
-    with context:
-        damocles = Damocles()
-        damocles.hang()
+    damocles = Damocles()
+    damocles.log_handler.close()  # can't have open log descriptors
+
+    daemon_runner = runner.DaemonRunner(damocles)
+    daemon_runner.do_action()
